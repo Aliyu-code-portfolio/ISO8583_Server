@@ -20,11 +20,13 @@ async void InitiateServer()
     var hostName = Dns.GetHostName(); // Get the current machine's host name
     var host = Dns.GetHostEntry("localhost");
     var ipAddress = host.AddressList[1];
+    var remoteHost = Dns.GetHostEntry("localhost");
+    var remoteIpAddress = host.AddressList[1];
     Console.WriteLine("IP Address: {0}", ipAddress);
     var endpoint = new IPEndPoint(ipAddress, 9000);
     try
     {
-        var listener = new Socket(ipAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+        var listener = new Socket(remoteIpAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
         listener.Bind(endpoint);
         listener.Listen(10);
         while (true)
@@ -53,7 +55,14 @@ async void InitiateServer()
                 string response = await RequestHandler(incomingRequestData);
 
                 byte[] msg = Encoding.ASCII.GetBytes(response);
-                connection.Send(msg);
+                try
+                {
+                    connection.Send(msg);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e.Message);
+                }
                 connection.Close();
             }
         }
@@ -68,7 +77,7 @@ async Task<string> RequestHandler(string incomingRequestData)
 {
     var isoRequest = Unpack(incomingRequestData);
 
-    string[] dataElement = new string[128];
+    string[] dataElement = new string[130];
 
     var messageType = incomingRequestData.Substring(0, 4);
     var response = await ProcessRequest(messageType, isoRequest, dataElement);
